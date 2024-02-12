@@ -1,22 +1,23 @@
 cmake_minimum_required(VERSION 3.5)
 project(KeyLogger VERSION 0.1.0 LANGUAGES C CXX)
 
+
 include(CTest)
 enable_testing()
 
 set(PROCESS_LIB process/process.cpp)
 set(KEYBOARD_LIB keyboard/keyboard.cpp)
 set(URL_LIB url/url.cpp)
-set(OLEACC_LIB C:/"Program Files (x86)"/"Windows Kits"/10/Include/10.0.22000.0/um/oleacc.h)
+
+find_library(oleacc OleAcc)
 
 add_library(process STATIC ${PROCESS_LIB})
 add_library(keyboard STATIC ${KEYBOARD_LIB})
 add_library(url STATIC ${URL_LIB})
 
-
 add_executable(KeyLogger main.cpp)
 
-target_link_libraries(KeyLogger process keyboard url)
+target_link_libraries(KeyLogger process keyboard url oleacc)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
