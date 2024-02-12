@@ -14,7 +14,7 @@ std::map<UINT, std::string> createKeyboardMap()
     char keybuffer;
     for (int i = 0; i < 256; ++i)
     {
-        if (keybuffer = MapVirtualKey(UINT(i), 2))
+        if (keybuffer == MapVirtualKey(UINT(i), 2))
         {
             keystring += keybuffer;
         }

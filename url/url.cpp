@@ -2,24 +2,32 @@
 
 HWINEVENTHOOK LHook = 0;
 
-void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime){
+std::regex url_regex(R"(^(([^:\/?#]+):)?(//([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)", std::regex::extended);
+
+void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
     IAccessible* pAcc = NULL;
     VARIANT varChild;
     if ((AccessibleObjectFromEvent(hwnd, idObject, idChild, &pAcc, &varChild) == S_OK) && (pAcc != NULL)) {
         char className[50];
         if (GetClassName(hwnd, className, 50) && strcmp(className, "Chrome_WidgetWin_1") == 0) {
-        BSTR bstrName = nullptr;
-        if (pAcc->get_accName(varChild, &bstrName) == S_OK) {
-            if (wcscmp(bstrName, L"Address and search bar") == 0) {
-                BSTR bstrValue = nullptr;
-                if (pAcc->get_accValue(varChild, &bstrValue) == S_OK) {
-                    printf("URL change: %ls\n", bstrValue);
-                    SysFreeString(bstrValue);
-                }
+            BSTR bstrName = nullptr;
+            if (pAcc->get_accName(varChild, &bstrName) == S_OK) {
+                printf("Change: %ls\n", bstrName);
+                // std::wstring ws(bstrName, SysStringLen(bstrName));
+                // std::string str(ws.begin(), ws.end());
+                // if (std::regex_match(str, url_regex)) {
+                // if (wcscmp(bstrName, L"Address and search bar") == 0) {
+                    BSTR bstrValue = nullptr;
+                    std::wstring ws(bstrValue, SysStringLen(bstrValue));
+                    std::string str(ws.begin(), ws.end());
+                    if (pAcc->get_accValue(varChild, &bstrValue) == S_OK && std::regex_match(str, url_regex) && !str.empty()) {
+                        printf("URL change: %ls\n", bstrValue);
+                        SysFreeString(bstrValue);
+                    }
+                // }
+                SysFreeString(bstrName);
             }
-            SysFreeString(bstrName);
-        }
-        pAcc->Release();
+            pAcc->Release();
         }
     }
 }

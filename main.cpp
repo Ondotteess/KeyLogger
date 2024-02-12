@@ -53,10 +53,10 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 int main(int, char**){
     
-    keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), NULL);
-    Hook();
-    
+    // keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), NULL);
     MSG msg;
+    
+    Hook();
     while (GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
@@ -64,7 +64,10 @@ int main(int, char**){
     }
 
     Unhook();
-    UnhookWindowsHookEx(keyboardHook);
+    // UnhookWindowsHookEx(keyboardHook);
+
+
+    // std::cout << std::regex_match("https://www.google.com", url_regex) << std::endl;
 
     return 0;
 }
