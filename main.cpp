@@ -1,5 +1,6 @@
 #include <iostream>
 #include "keyboard/keyboard.h"
+#include "url/url.h"
 
 
 HHOOK keyboardHook;
@@ -53,6 +54,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 int main(int, char**){
     
     keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), NULL);
+    Hook();
     
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
@@ -61,6 +63,7 @@ int main(int, char**){
         DispatchMessage(&msg);
     }
 
+    Unhook();
     UnhookWindowsHookEx(keyboardHook);
 
     return 0;

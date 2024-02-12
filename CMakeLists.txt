@@ -7,10 +7,12 @@ enable_testing()
 set(PROCESS_LIB process/process.cpp)
 set(KEYBOARD_LIB keyboard/keyboard.cpp)
 set(URL_LIB url/url.cpp)
+set(OLEACC_LIB C:/"Program Files (x86)"/"Windows Kits"/10/Include/10.0.22000.0/um/oleacc.h)
 
 add_library(process STATIC ${PROCESS_LIB})
 add_library(keyboard STATIC ${KEYBOARD_LIB})
 add_library(url STATIC ${URL_LIB})
+
 
 add_executable(KeyLogger main.cpp)
 
