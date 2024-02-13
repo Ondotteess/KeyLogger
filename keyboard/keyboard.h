@@ -17,4 +17,6 @@
 
 using system_clock = std::chrono::system_clock;
 
-std::map<UINT, std::string> createKeyboardMap();
+void hookKeyboard();
+
+void unhookKeyboard();

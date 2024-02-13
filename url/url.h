@@ -10,8 +10,6 @@
 #include <regex>
 
 
+void hookUrl();
 
-
-void Hook();
-
-void Unhook();
+void unhookUrl();

