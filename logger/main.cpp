@@ -1,18 +1,19 @@
 #include <iostream>
 
+#include <AtlBase.h>
+#include <AtlCom.h>
+#include <UIAutomation.h>
+#include <windows.h>
+
 #include "process/process.h"
 #include "keyboard/keyboard.h"
-#include "url/url.h"
 
+int main()
+{
 
-
-
-
-int main(int, char**){
     MSG msg;
-    
+
     hookKeyboard();
-    hookUrl();
     while (GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
@@ -20,8 +21,6 @@ int main(int, char**){
     }
 
     unhookKeyboard();
-    unhookUrl();
-
 
     return 0;
 }
