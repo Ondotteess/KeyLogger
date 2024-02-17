@@ -7,58 +7,20 @@
 
 #include "process/process.h"
 #include "keyboard/keyboard.h"
-#include "url/url.h"
 
-int main(int, char **)
+int main()
 {
-    std::string url("");
 
-    HWND hWnd = nullptr;
-    while (1)
+    MSG msg;
+
+    hookKeyboard();
+    while (GetMessage(&msg, NULL, 0, 0))
     {
-        hWnd = FindWindowEx(nullptr, hWnd, "Chrome_WidgetWin_1", nullptr);
-
-        // if (hWnd != nullptr)
-        // {
-        //     return 0;
-        // }
-
-        if (IsWindowVisible(hWnd) == 0 && GetWindowThreadProcessId(hWnd, NULL) != GetCurrentThreadId() && GetWindowTextLength(hWnd) > 0)
-        {
-            break;
-        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
-    CoInitializeEx(NULL, COINIT_MULTITHREADED);
-
-    CComPtr<IUIAutomation> uia;
-    if (SUCCEEDED(uia.CoCreateInstance(CLSID_CUIAutomation)))
-    {
-        CComPtr<IUIAutomationElement> root;
-        if (SUCCEEDED(uia->GetRootElement(&root)))
-        {
-            if (find_url(uia, root, url))
-            {
-                std::cout << url << std::endl;
-            }
-            //     return 0;
-        }
-    }
-
-    CoUninitialize();
-
-    // MSG msg;
-
-    // hookKeyboard();
-    // hookUrl();
-    // while (GetMessage(&msg, NULL, 0, 0))
-    // {
-    //     TranslateMessage(&msg);
-    //     DispatchMessage(&msg);
-    // }
-
-    // unhookKeyboard();
-    // unhookUrl();
+    unhookKeyboard();
 
     return 0;
 }

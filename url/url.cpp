@@ -1,11 +1,20 @@
 #include "url.h"
 
+CComPtr<IUIAutomationElement> getChromeRoot(CComPtr<IUIAutomation> uia)
+{
+    
+    CComPtr<IUIAutomationElement> root;
+
+    if SUCCEEDED (uia->GetRootElement(&root))
+    {
+        return root;
+    }
+
+    return nullptr;
+}
 
 bool find_url(IUIAutomation *uia, IUIAutomationElement *root, std::string &retUrl)
 {
-    // The root window has several childs,
-    // one of them is a "pane" named "Google Chrome"
-    // This contains the toolbar. Find this "Google Chrome" pane:
     CComPtr<IUIAutomationElement> pane;
     CComPtr<IUIAutomationCondition> pane_cond;
     uia->CreatePropertyCondition(UIA_ControlTypePropertyId,
@@ -26,18 +35,14 @@ bool find_url(IUIAutomation *uia, IUIAutomationElement *root, std::string &retUr
                 std::wstring ws(name, SysStringLen(name));
                 if (ws.find(L"Google Chrome") != std::wstring::npos)
                     break;
-                // if (wcscmp(name, L"Google Chrome") == 0)
-                //     break;
             }
-            
-                
+
         pane.Release();
     }
 
     if (!pane)
         return false;
 
-    // look for first UIA_EditControlTypeId under "Google Chrome" pane
     CComPtr<IUIAutomationElement> url;
     CComPtr<IUIAutomationCondition> url_cond;
     uia->CreatePropertyCondition(UIA_ControlTypePropertyId,
@@ -45,13 +50,11 @@ bool find_url(IUIAutomation *uia, IUIAutomationElement *root, std::string &retUr
     if FAILED (pane->FindFirst(TreeScope_Descendants, url_cond, &url))
         return false;
 
-    // get value of `url`
     CComVariant var;
     if FAILED (url->GetCurrentPropertyValue(UIA_ValueValuePropertyId, &var))
         return false;
     if (!var.bstrVal)
         return false;
-    // wprintf(L"find_url: %s\n", var.bstrVal);
 
     std::wstring wStr(var.bstrVal, SysStringLen(var.bstrVal));
     retUrl = std::string(wStr.begin(), wStr.end());
@@ -70,4 +73,19 @@ bool find_url(IUIAutomation *uia, IUIAutomationElement *root, std::string &retUr
     // SendInput(2, input, sizeof(INPUT));
 
     return true;
+}
+
+void getChromeUrl(std::string &retUrl)
+{
+
+    CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    CComPtr<IUIAutomation> uia;
+    if FAILED (uia.CoCreateInstance(CLSID_CUIAutomation))
+    {
+        return;
+    }
+
+    CComPtr<IUIAutomationElement> root = getChromeRoot(uia);
+    find_url(uia, root, retUrl);
+    CoUninitialize();
 }

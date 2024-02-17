@@ -19,3 +19,5 @@
 // void unhookUrl();
 
 bool find_url(IUIAutomation *uia, IUIAutomationElement *root, std::string &retUrl);
+
+void getChromeUrl(std::string &retUrl);
